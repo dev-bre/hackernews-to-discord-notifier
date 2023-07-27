@@ -1,5 +1,6 @@
 import express, { Express } from 'express';
 import cors from "cors"; 
+import * as scheduler from "./scheduler";
 
 const app: Express = express();
 const port = 4000;
@@ -13,6 +14,8 @@ app.get("/api", (req, res) => {
         message: "Food ordering chatbot",
     });
 });
+
+scheduler.initScheduledJobs();
 
 app.listen(port, () => {
     console.log(`⚡️[server]: Server is running on port 4000`);
