@@ -40,7 +40,7 @@ const cronJob = __importStar(require("node-cron"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const hackerNews = __importStar(require("./hackerNews"));
 dotenv_1.default.config();
-const globalResults = [];
+let globalResults = [];
 const initScheduledJobs = () => {
     const scheduledJobFunction = cronJob.schedule("*/1 * * * *", () => __awaiter(void 0, void 0, void 0, function* () {
         const userName = process.env.HN_USERNAME;
@@ -49,16 +49,23 @@ const initScheduledJobs = () => {
         console.log("Starting check HackerNews -> Discord");
         const currentResults = yield grabContentFromHN(userName, selectedPostId);
         console.log(JSON.stringify(currentResults));
+        // Compare the latest results with the previous run, 
+        // if there is a change, then there are updates to this post.
+        const updateAvailable = compareWithLastRun(currentResults);
+        if (updateAvailable) {
+            console.log("New updates available!");
+            // notify Discord!
+        }
+        // update the global state
+        globalResults = [...currentResults];
     }));
     scheduledJobFunction.start();
 };
 exports.initScheduledJobs = initScheduledJobs;
 const grabContentFromHN = (userName, selectedPostId) => __awaiter(void 0, void 0, void 0, function* () {
     const userData = yield hackerNews.getUser(userName);
-    //console.log(userData);
     const selectedPost = userData.submitted.filter(x => x === Number(selectedPostId))[0];
     const submissionData = yield hackerNews.getSubmission(selectedPost);
-    //console.log(submissionData);
     const latestResults = [];
     latestResults.push({ id: submissionData.id, text: submissionData.text, time: submissionData.time });
     const kids = submissionData.kids;
@@ -76,7 +83,7 @@ const grabContentFromHN = (userName, selectedPostId) => __awaiter(void 0, void 0
 });
 const callRecursively = (node, results) => __awaiter(void 0, void 0, void 0, function* () {
     let curr = yield hackerNews.getSubmission(node.id);
-    console.log(curr);
+    // console.log(curr);
     const kids = curr.kids;
     results.push({ id: node.id, text: node.text, time: node.time });
     if (kids && kids.length > 0) {
@@ -88,6 +95,14 @@ const callRecursively = (node, results) => __awaiter(void 0, void 0, void 0, fun
             };
             yield callRecursively(childNode, results);
         }
-        //kids.forEach(async (node) => { await callRecursively(node, results); });
     }
 });
+const compareWithLastRun = (currentResults) => {
+    if (globalResults.length < currentResults.length) {
+        return true;
+    }
+    if (JSON.stringify(globalResults) !== JSON.stringify(currentResults)) {
+        return true;
+    }
+    return false;
+};

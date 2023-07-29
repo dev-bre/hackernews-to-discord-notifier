@@ -10,7 +10,7 @@ export type ResultType = {
 	time: number
 };
 
-const globalResults: ResultType[] = [];
+let globalResults: ResultType[] = [];
 
 export const initScheduledJobs = () => {
 	const scheduledJobFunction = cronJob.schedule("*/1 * * * *", async () => {
@@ -32,7 +32,10 @@ export const initScheduledJobs = () => {
 			console.log("New updates available!");
 
 			// notify Discord!
-		} 
+		}
+
+		// update the global state
+		globalResults = [...currentResults];
 
 	});
 
@@ -81,7 +84,7 @@ const callRecursively = async (node: ResultType, results: ResultType[]): Promise
 	}
 };
 
-const compareWithLastRun = (currentResults: ResultType[]) : bool => {
+const compareWithLastRun = (currentResults: ResultType[]) : boolean => {
 	if (globalResults.length < currentResults.length) {
 		return true;
 	}
