@@ -1,6 +1,7 @@
 import * as cronJob from "node-cron";
 import dotenv from "dotenv";
 import * as hackerNews from "./hackerNews";
+import * as discordNotifier from "./discordNotifier";
 
 dotenv.config();
 
@@ -17,12 +18,11 @@ export const initScheduledJobs = () => {
 
 		const userName = process.env.HN_USERNAME as string;
 		const selectedPostId = process.env.HN_POST_ID as string;
-		const discordWebHook = process.env.DISCORD_WEBHOOK as string;
 
 		console.log("Starting check HackerNews -> Discord");
 
 		const currentResults = await grabContentFromHN(userName, selectedPostId);
-		console.log(JSON.stringify(currentResults));
+		// console.log(JSON.stringify(currentResults));
 
 		// Compare the latest results with the previous run, 
 		// if there is a change, then there are updates to this post.
@@ -30,8 +30,8 @@ export const initScheduledJobs = () => {
 
 		if (updateAvailable) {
 			console.log("New updates available!");
-
 			// notify Discord!
+			await discordNotifier.notifyDiscord("New comments(s) available!", selectedPostId, currentResults[0].text, currentResults.length - 1);
 		}
 
 		// update the global state

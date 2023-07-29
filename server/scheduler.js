@@ -39,22 +39,23 @@ exports.initScheduledJobs = void 0;
 const cronJob = __importStar(require("node-cron"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const hackerNews = __importStar(require("./hackerNews"));
+const discordNotifier = __importStar(require("./discordNotifier"));
 dotenv_1.default.config();
 let globalResults = [];
 const initScheduledJobs = () => {
     const scheduledJobFunction = cronJob.schedule("*/1 * * * *", () => __awaiter(void 0, void 0, void 0, function* () {
         const userName = process.env.HN_USERNAME;
         const selectedPostId = process.env.HN_POST_ID;
-        const discordWebHook = process.env.DISCORD_WEBHOOK;
         console.log("Starting check HackerNews -> Discord");
         const currentResults = yield grabContentFromHN(userName, selectedPostId);
-        console.log(JSON.stringify(currentResults));
+        // console.log(JSON.stringify(currentResults));
         // Compare the latest results with the previous run, 
         // if there is a change, then there are updates to this post.
         const updateAvailable = compareWithLastRun(currentResults);
         if (updateAvailable) {
             console.log("New updates available!");
             // notify Discord!
+            yield discordNotifier.notifyDiscord("New comments(s) available!", selectedPostId, currentResults[0].text, currentResults.length - 1);
         }
         // update the global state
         globalResults = [...currentResults];
